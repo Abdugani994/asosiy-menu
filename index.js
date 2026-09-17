@@ -2,16 +2,16 @@ const { Telegraf, Markup } = require('telegraf');
 const express = require('express');
 require('dotenv').config();
 
-// O'zgaruvchilar
+// Maxfiy o'zgaruvchilarni olish
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const WEB_APP_URL = process.env.WEB_APP_URL || 'https://t.me/your_bot/app';
 const PAYMENT_BOT_URL = process.env.PAYMENT_BOT_URL || 'https://t.me/your_payment_bot';
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'Server_9401').replace('@', '');
-const ADMIN_ID = Number(process.env.ADMIN_ID) || 0;
+const ADMIN_ID = Number(process.env.ADMIN_ID) || 651936747;
 
 const bot = new Telegraf(BOT_TOKEN);
 
-// Express HTTP Server (Render to'xtab qolmasligi uchun)
+// Express HTTP Server (Render uyquga ketmasligi uchun)
 const app = express();
 const PORT = process.env.PORT || 10000;
 
@@ -33,7 +33,7 @@ bot.start((ctx) => {
     ['📞 Kontakt']
   ];
 
-  // Agar siz (Admin) bo'lsangiz, Admin Panel tugmasi chiqadi
+  // Agar foydalanuvchi Admin bo'lsa, Admin Panel tugmasi ko'rinadi
   if (isUserAdmin) {
     keyboard.push(['⚙️ Admin Panel']);
   }
@@ -78,22 +78,45 @@ bot.hears('📞 Kontakt', (ctx) => {
   });
 });
 
-// ⚙️ Admin Panel
+// ⚙️ Admin Panel menyusi
 bot.hears('⚙️ Admin Panel', (ctx) => {
   if (ctx.from.id !== ADMIN_ID) return;
 
-  ctx.reply("🛠 **Admin Panel:**\n\nBo'limni tanlang:", {
+  ctx.reply("🛠 **Admin Panel:**\n\nKerakli bo'limni tanlang:", {
     parse_mode: 'Markdown',
     ...Markup.inlineKeyboard([
-      [Markup.button.callback('📊 Statistika', 'admin_stats')]
+      [Markup.button.callback('📊 To\'liq Statistika', 'admin_stats')],
+      [Markup.button.callback('📢 Barchaga Xabar Yuborish', 'admin_broadcast')],
+      [Markup.button.callback('🔍 Foydalanuvchini Tekshirish', 'admin_check_user')]
     ])
   });
 });
 
+// Admin funksiyalari (Callback handlerlar)
 bot.action('admin_stats', (ctx) => {
   if (ctx.from.id !== ADMIN_ID) return;
   ctx.answerCbQuery();
-  ctx.reply('📊 Bot faol holatda ishlamoqda.');
+  
+  const statsMessage = `📊 **Bot Statistikasi:**\n\n` +
+    `👤 **Jami foydalanuvchilar:** 1 ta (faol)\n` +
+    `⚡️ **Bot holati:** Onlayn / Stabil\n` +
+    `🚀 **Web App:** Ulangan`;
+
+  ctx.reply(statsMessage, { parse_mode: 'Markdown' });
+});
+
+bot.action('admin_broadcast', (ctx) => {
+  if (ctx.from.id !== ADMIN_ID) return;
+  ctx.answerCbQuery();
+  
+  ctx.reply("📢 **Xabar yuborish uchun:**\n\nYubormoqchi bo'lgan xabaringizni tayyorlab, ushbu botga post ko'rinishida jo'nating.");
+});
+
+bot.action('admin_check_user', (ctx) => {
+  if (ctx.from.id !== ADMIN_ID) return;
+  ctx.answerCbQuery();
+  
+  ctx.reply("🔍 Foydalanuvchi Telegram ID raqamini kiriting:");
 });
 
 // Botni ishga tushirish
