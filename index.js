@@ -64,3 +64,14 @@ console.log('Bot muvaffaqiyatli ishga tushdi!');
 // Process termination handler
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+  res.send('Bot muvaffaqiyatli ishlamoqda!');
+});
+
+app.listen(PORT, () => {
+  console.log(`Server ${PORT}-portda ishlamoqda`);
+});
