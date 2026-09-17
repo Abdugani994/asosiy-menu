@@ -53,7 +53,7 @@ bot.hears('📞 Kontakt', (ctx) => {
   ctx.reply(text, {
     ...Markup.inlineKeyboard([
       // ✅ TO'G'RI KO'RINIShI (Juft tirnoq ishlatilgan):
-[Markup.button.url("💬 Admin bilan bog'lanish", `https://t.me/${ADMIN_USERNAME}`)]
+[Markup.button.url("💬 Admin bilan bog'lanish", `https://t.me/Server_9401`)]
     ])
   });
 });
