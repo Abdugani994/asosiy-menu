@@ -52,7 +52,8 @@ bot.hears('📞 Kontakt', (ctx) => {
 
   ctx.reply(text, {
     ...Markup.inlineKeyboard([
-      [Markup.button.url('💬 Admin bilan bog'lanish', `https://t.me/${ADMIN_USERNAME}`)]
+      // ✅ TO'G'RI KO'RINIShI (Juft tirnoq ishlatilgan):
+[Markup.button.url("💬 Admin bilan bog'lanish", `https://t.me/${ADMIN_USERNAME}`)]
     ])
   });
 });
