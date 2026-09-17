@@ -1,3 +1,42 @@
+const ADMIN_ID = Number(process.env.ADMIN_ID) || 0;
+
+bot.start((ctx) => {
+  const isUserAdmin = ctx.from.id === ADMIN_ID;
+
+  let keyboard = [
+    [Markup.button.webApp('🚀 Web App-ni ochish', WEB_APP_URL)],
+    ['💳 Obunalar', '📖 Yordam'],
+    ['📞 Kontakt']
+  ];
+
+  // Agar siz bo'lsangiz, Admin panel tugmasi qo'shiladi
+  if (isUserAdmin) {
+    keyboard.push(['⚙️ Admin Panel']);
+  }
+
+  ctx.reply(
+    `Xush kelibsiz, ${ctx.from.first_name}!`,
+    Markup.keyboard(keyboard).resize()
+  );
+});
+
+// Admin panel bosilganda
+bot.hears('⚙️ Admin Panel', (ctx) => {
+  if (ctx.from.id !== ADMIN_ID) return;
+
+  ctx.reply("🛠 **Admin Panel:**\n\nBo'limni tanlang:", {
+    parse_mode: 'Markdown',
+    ...Markup.inlineKeyboard([
+      [Markup.button.callback('📊 Statistika', 'admin_stats')]
+    ])
+  });
+});
+
+bot.action('admin_stats', (ctx) => {
+  if (ctx.from.id !== ADMIN_ID) return;
+  ctx.answerCbQuery();
+  ctx.reply('📊 Bot faol holatda ishlamoqda.');
+});
 const { Telegraf, Markup } = require('telegraf');
 require('dotenv').config();
 
