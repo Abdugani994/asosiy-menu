@@ -51,7 +51,9 @@ function updateUser(userObj) {
       ...users[idx],
       first_name: userObj.first_name || users[idx].first_name,
       last_name: userObj.last_name || users[idx].last_name,
-      username: userObj.username ? `@${userObj.username}` : users[idx].username
+      username: userObj.username ? `@${userObj.username}` : users[idx].username,
+      is_premium: typeof userObj.is_premium !== 'undefined' ? userObj.is_premium : users[idx].is_premium,
+      subscriptions: userObj.subscriptions || users[idx].subscriptions || []
     };
   } else {
     users.push({
@@ -60,8 +62,8 @@ function updateUser(userObj) {
       last_name: userObj.last_name || '',
       username: userObj.username ? `@${userObj.username}` : 'Mavjud emas',
       lang: 'uz',
-      is_premium: false,
-      subscriptions: [],
+      is_premium: userObj.is_premium || false,
+      subscriptions: userObj.subscriptions || [],
       joined_at: new Date().toISOString()
     });
   }
@@ -132,7 +134,7 @@ bot.hears([TRANSLATIONS.uz.btn_sub, TRANSLATIONS.en.btn_sub, TRANSLATIONS.ru.btn
   let responseText = "";
 
   if (u && u.is_premium) {
-    let activeBooks = "Essential English Words 1";
+    let activeBooks = "Mavjud emas";
     if (u.subscriptions && u.subscriptions.length > 0) {
       activeBooks = u.subscriptions.join(', ');
     }
@@ -256,33 +258,82 @@ bot.action(/ignore_msg_(\d+)/, (ctx) => {
   ctx.editMessageText(ctx.callbackQuery.message.text + "\n\n❌ *E'tiborsiz qoldirildi*", { parse_mode: 'Markdown' });
 });
 
+// Premium va Kitob biriktirish tugmalari hodisasi
 bot.action(/toggle_prem_(\d+)/, (ctx) => {
+  if (ctx.from.id !== ADMIN_ID) return;
+
   const targetId = Number(ctx.match[1]);
   const u = getUser(targetId);
-  if (!u) return ctx.reply("Foydalanuvchi topilmadi.");
+  if (!u) {
+    ctx.answerCbQuery("Foydalanuvchi topilmadi!");
+    return;
+  }
 
   u.is_premium = !u.is_premium;
+  if (!u.is_premium) {
+    u.subscriptions = [];
+  }
   updateUser(u);
 
-  ctx.answerCbQuery();
-  ctx.reply(`Status o'zgartirildi: ${u.is_premium ? '⭐ Premium' : 'Oddiy'}\n\nEndi kitob obunasini tanlang:`,
-    Markup.inlineKeyboard(
-      BOOKS.map(b => [Markup.button.callback(b.title, `toggle_book_${targetId}_${b.id}`)])
+  ctx.answerCbQuery("Status o'zgardi!");
+
+  const bookButtons = BOOKS.map(b => [
+    Markup.button.callback(
+      `${u.subscriptions && u.subscriptions.includes(b.title) ? '✅' : '➕'} ${b.title}`,
+      `toggle_book_${targetId}_${b.id}`
     )
+  ]);
+
+  ctx.reply(
+    `👤 **Foydalanuvchi:** ${u.first_name}\n` +
+    `⭐ **Status:** ${u.is_premium ? 'Premium ACTIVE' : 'Oddiy'}\n\n` +
+    `Endi foydalanuvchiga biriktirmoqchi bo'lgan kitobingizni bosing:`,
+    {
+      parse_mode: 'Markdown',
+      ...Markup.inlineKeyboard(bookButtons)
+    }
   );
 });
 
 bot.action(/toggle_book_(\d+)_(.+)/, (ctx) => {
+  if (ctx.from.id !== ADMIN_ID) return;
+
   const targetId = Number(ctx.match[1]);
   const bookId = ctx.match[2];
+
   const u = getUser(targetId);
-  if (u) {
-    if (!u.subscriptions) u.subscriptions = [];
-    if (!u.subscriptions.includes(bookId)) u.subscriptions.push(bookId);
-    updateUser(u);
+  const bookObj = BOOKS.find(b => b.id === bookId);
+
+  if (!u || !bookObj) {
+    ctx.answerCbQuery("Xatolik yuz berdi!");
+    return;
   }
-  ctx.answerCbQuery();
-  ctx.reply(`✅ ID: \`${targetId}\` foydalanuvchisiga **${bookId}** kitobi obunasi biriktirildi!`, { parse_mode: 'Markdown' });
+
+  if (!Array.isArray(u.subscriptions)) {
+    u.subscriptions = [];
+  }
+
+  const bookTitle = bookObj.title;
+  const existsIndex = u.subscriptions.indexOf(bookTitle);
+
+  if (existsIndex > -1) {
+    u.subscriptions.splice(existsIndex, 1);
+  } else {
+    u.subscriptions.push(bookTitle);
+  }
+
+  u.is_premium = true;
+  updateUser(u);
+
+  ctx.answerCbQuery("Obuna yangilandi!");
+
+  ctx.reply(
+    `✅ **Muvaffaqiyatli saqlandi!**\n\n` +
+    `👤 **Foydalanuvchi:** ${u.first_name} (\`${u.id}\`)\n` +
+    `⭐ **Status:** Premium\n` +
+    `📚 **Aktiv kitoblari:** ${u.subscriptions.join(', ')}`,
+    { parse_mode: 'Markdown' }
+  );
 });
 
 // Message Listener
