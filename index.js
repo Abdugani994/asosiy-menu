@@ -13,8 +13,7 @@ const ADMIN_ID = Number(process.env.ADMIN_ID) || 651936747;
 const bot = new Telegraf(BOT_TOKEN);
 const DB_FILE = path.join(__dirname, 'users.json');
 
-// Bazadan o'qish va saqlash
-// Bazadan o'qish va xatosiz saqlash
+// Bazadan xatosiz o'qish va saqlash
 function getUsers() {
   try {
     if (!fs.existsSync(DB_FILE)) {
@@ -38,8 +37,7 @@ function saveUsers(users) {
 }
 
 function getUser(id) {
-  const users = getUsers();
-  return users.find(u => Number(u.id) === Number(id));
+  return getUsers().find(u => Number(u.id) === Number(id));
 }
 
 function updateUser(userObj) {
@@ -49,7 +47,6 @@ function updateUser(userObj) {
   const idx = users.findIndex(u => Number(u.id) === Number(userObj.id));
 
   if (idx !== -1) {
-    // Mavjud foydalanuvchi ma'lumotlarini yangilash
     users[idx] = {
       ...users[idx],
       first_name: userObj.first_name || users[idx].first_name,
@@ -57,37 +54,8 @@ function updateUser(userObj) {
       username: userObj.username ? `@${userObj.username}` : users[idx].username
     };
   } else {
-    // Yangi foydalanuvchini ro'yxatga qo'shish
     users.push({
       id: Number(userObj.id),
-      first_name: userObj.first_name || '',
-      last_name: userObj.last_name || '',
-      username: userObj.username ? `@${userObj.username}` : 'Mavjud emas',
-      lang: 'uz',
-      is_premium: false,
-      subscriptions: [],
-      joined_at: new Date().toISOString()
-    });
-  }
-  saveUsers(users);
-}
-
-function saveUsers(users) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(users, null, 2));
-}
-
-function getUser(id) {
-  return getUsers().find(u => u.id === id);
-}
-
-function updateUser(userObj) {
-  const users = getUsers();
-  const idx = users.findIndex(u => u.id === userObj.id);
-  if (idx !== -1) {
-    users[idx] = { ...users[idx], ...userObj };
-  } else {
-    users.push({
-      id: userObj.id,
       first_name: userObj.first_name || '',
       last_name: userObj.last_name || '',
       username: userObj.username ? `@${userObj.username}` : 'Mavjud emas',
@@ -104,12 +72,12 @@ function updateUser(userObj) {
 const userStates = {};
 const adminStates = {};
 
-// Express server
+// Express server (Render keep-alive)
 const app = express();
 app.get('/', (req, res) => res.send('Bot ishlamoqda!'));
 app.listen(process.env.PORT || 10000);
 
-// Klaviatura yasash
+// Asosiy klaviatura
 function getMainKeyboard(ctx) {
   const u = getUser(ctx.from.id) || { lang: 'uz' };
   const lang = u.lang || 'uz';
@@ -155,29 +123,57 @@ bot.action(/set_lang_(uz|en|ru)/, (ctx) => {
   ctx.reply(TRANSLATIONS[lang].welcome, getMainKeyboard(ctx));
 });
 
-// User Menyular
+// Dinamik Obunalar bo'limi
 bot.hears([TRANSLATIONS.uz.btn_sub, TRANSLATIONS.en.btn_sub, TRANSLATIONS.ru.btn_sub], (ctx) => {
+  updateUser(ctx.from);
   const u = getUser(ctx.from.id);
-  const t = TRANSLATIONS[u.lang || 'uz'];
-  ctx.reply(t.sub_text, { parse_mode: 'Markdown' });
+  const lang = u ? (u.lang || 'uz') : 'uz';
+
+  let responseText = "";
+
+  if (u && u.is_premium) {
+    let activeBooks = "Essential English Words 1";
+    if (u.subscriptions && u.subscriptions.length > 0) {
+      activeBooks = u.subscriptions.join(', ');
+    }
+
+    if (lang === 'uz') {
+      responseText = `📊 **Sizning obunangiz:**\n\n⭐ Status: **Premium**\n📚 Kitoblar: **${activeBooks}**\n⏳ Qolgan muddat: **30 kun**`;
+    } else if (lang === 'en') {
+      responseText = `📊 **Your Subscription:**\n\n⭐ Status: **Premium**\n📚 Books: **${activeBooks}**\n⏳ Days remaining: **30 days**`;
+    } else {
+      responseText = `📊 **Ваша подписка:**\n\n⭐ Статус: **Premium**\n📚 Книги: **${activeBooks}**\n⏳ Осталось дней: **30 дней**`;
+    }
+  } else {
+    if (lang === 'uz') {
+      responseText = `📊 **Sizning obunangiz:**\n\n❌ Sizda hozircha faol obuna mavjud emas.\n\nObuna bo'lish uchun adminga murojaat qiling yoki **📞 Kontakt** bo'limi orqali xabar yuboring.`;
+    } else if (lang === 'en') {
+      responseText = `📊 **Your Subscription:**\n\n❌ You do not have an active subscription yet.\n\nTo subscribe, please contact the admin via the **📞 Contact** section.`;
+    } else {
+      responseText = `📊 **Ваша подписка:**\n\n❌ У вас пока нет активной подписки.\n\nЧтобы оформить подписку, свяжитесь с администратором через раздел **📞 Контакт**.`;
+    }
+  }
+
+  ctx.reply(responseText, { parse_mode: 'Markdown' });
 });
 
 bot.hears([TRANSLATIONS.uz.btn_help, TRANSLATIONS.en.btn_help, TRANSLATIONS.ru.btn_help], (ctx) => {
   const u = getUser(ctx.from.id);
-  const t = TRANSLATIONS[u.lang || 'uz'];
+  const t = TRANSLATIONS[u ? u.lang || 'uz' : 'uz'];
   ctx.reply(t.help_text, { parse_mode: 'Markdown' });
 });
 
 bot.hears([TRANSLATIONS.uz.btn_more, TRANSLATIONS.en.btn_more, TRANSLATIONS.ru.btn_more], (ctx) => {
   const u = getUser(ctx.from.id);
-  const t = TRANSLATIONS[u.lang || 'uz'];
+  const t = TRANSLATIONS[u ? u.lang || 'uz' : 'uz'];
   ctx.reply(t.more_text, { parse_mode: 'Markdown' });
 });
 
-// 📞 KONTAKT: Adminga xabar yuborish rejimini yoqish
+// Kontakt: Ticket tizimi
 bot.hears([TRANSLATIONS.uz.btn_contact, TRANSLATIONS.en.btn_contact, TRANSLATIONS.ru.btn_contact], (ctx) => {
+  updateUser(ctx.from);
   const u = getUser(ctx.from.id);
-  const t = TRANSLATIONS[u.lang || 'uz'];
+  const t = TRANSLATIONS[u ? u.lang || 'uz' : 'uz'];
   userStates[ctx.from.id] = { action: 'awaiting_feedback' };
   ctx.reply(t.contact_text, { parse_mode: 'Markdown' });
 });
@@ -245,7 +241,7 @@ bot.action('send_to_one', (ctx) => {
   ctx.reply("👤 Qaysi **ID** egasiga xabar yubormoqchisiz? ID raqamni kiriting:");
 });
 
-// Admin Reply va Ignore tugmalari
+// Admin Reply/Ignore
 bot.action(/reply_to_(\d+)/, (ctx) => {
   if (ctx.from.id !== ADMIN_ID) return;
   const targetId = Number(ctx.match[1]);
@@ -279,20 +275,25 @@ bot.action(/toggle_prem_(\d+)/, (ctx) => {
 bot.action(/toggle_book_(\d+)_(.+)/, (ctx) => {
   const targetId = Number(ctx.match[1]);
   const bookId = ctx.match[2];
+  const u = getUser(targetId);
+  if (u) {
+    if (!u.subscriptions) u.subscriptions = [];
+    if (!u.subscriptions.includes(bookId)) u.subscriptions.push(bookId);
+    updateUser(u);
+  }
   ctx.answerCbQuery();
   ctx.reply(`✅ ID: \`${targetId}\` foydalanuvchisiga **${bookId}** kitobi obunasi biriktirildi!`, { parse_mode: 'Markdown' });
 });
 
-// MESSAGE HANDLER (Xabarlarni ushlash)
+// Message Listener
 bot.on('message', async (ctx, next) => {
   updateUser(ctx.from);
 
-  // 1. Foydalanuvchi Adminga murojaat yuborganda
+  // 1. Foydalanuvchi Murojaati
   const uState = userStates[ctx.from.id];
   if (uState && uState.action === 'awaiting_feedback' && ctx.from.id !== ADMIN_ID) {
     delete userStates[ctx.from.id];
 
-    // Xabarni adminga yetkazish
     await ctx.telegram.sendMessage(
       ADMIN_ID,
       `📩 **Yangi Murojaat!**\n\n` +
@@ -316,7 +317,6 @@ bot.on('message', async (ctx, next) => {
   const aState = adminStates[ctx.from.id];
   if (!aState || ctx.from.id !== ADMIN_ID) return next();
 
-  // Admin foydalanuvchiga javob yozganda
   if (aState.action === 'awaiting_reply_msg') {
     const targetId = aState.targetId;
     delete adminStates[ctx.from.id];
@@ -329,7 +329,6 @@ bot.on('message', async (ctx, next) => {
     }
   }
 
-  // Admin ID kiritganda Premium Boshqaruvi
   if (aState.action === 'awaiting_target_id') {
     const targetId = Number(ctx.message.text);
     delete adminStates[ctx.from.id];
@@ -348,7 +347,6 @@ bot.on('message', async (ctx, next) => {
     );
   }
 
-  // Barchaga xabar
   if (aState.action === 'awaiting_broadcast') {
     delete adminStates[ctx.from.id];
     const users = getUsers();
@@ -359,7 +357,6 @@ bot.on('message', async (ctx, next) => {
     return ctx.reply(`✅ Xabar ${c} ta foydalanuvchiga yetkazildi!`);
   }
 
-  // Alohida xabar uchun ID
   if (aState.action === 'awaiting_single_id') {
     const targetId = Number(ctx.message.text);
     adminStates[ctx.from.id] = { action: 'awaiting_single_msg', targetId };
