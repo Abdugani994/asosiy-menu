@@ -53,7 +53,8 @@ function updateUser(userObj) {
       last_name: userObj.last_name || users[idx].last_name,
       username: userObj.username ? `@${userObj.username}` : users[idx].username,
       is_premium: typeof userObj.is_premium !== 'undefined' ? userObj.is_premium : users[idx].is_premium,
-      subscriptions: userObj.subscriptions || users[idx].subscriptions || []
+      subscriptions: userObj.subscriptions || users[idx].subscriptions || [],
+      lang: userObj.lang || users[idx].lang || 'uz' // <--- Til saqlanishi uchun qo'shildi
     };
   } else {
     users.push({
@@ -61,7 +62,7 @@ function updateUser(userObj) {
       first_name: userObj.first_name || '',
       last_name: userObj.last_name || '',
       username: userObj.username ? `@${userObj.username}` : 'Mavjud emas',
-      lang: 'uz',
+      lang: userObj.lang || 'uz',
       is_premium: userObj.is_premium || false,
       subscriptions: userObj.subscriptions || [],
       joined_at: new Date().toISOString()
@@ -69,6 +70,26 @@ function updateUser(userObj) {
   }
   saveUsers(users);
 }
+
+// Tilni tanlash va menyuni birdan yangilash
+bot.hears(['🌐 Tilni o\'zgartirish', '🌐 Change Language', '🌐 Изменить язык'], (ctx) => {
+  ctx.reply("Tilni tanlang / Select language / Выберите язык:", Markup.inlineKeyboard([
+    [Markup.button.callback('🇺🇿 O\'zbekcha', 'set_lang_uz')],
+    [Markup.button.callback('🇬🇧 English', 'set_lang_en')],
+    [Markup.button.callback('🇷🇺 Русский', 'set_lang_ru')]
+  ]));
+});
+
+bot.action(/set_lang_(uz|en|ru)/, (ctx) => {
+  const lang = ctx.match[1];
+  const u = getUser(ctx.from.id) || { id: ctx.from.id };
+  u.lang = lang;
+  updateUser(u); // Endi tanlangan til bazaga aniq saqlanadi
+  ctx.answerCbQuery();
+  
+  const t = TRANSLATIONS[lang] || TRANSLATIONS.uz;
+  ctx.reply(t.welcome, getMainKeyboard(ctx));
+});
 
 // --- MUDDATLARNI HISOBLASH VA AVTO-TOZALASH ---
 function getRemainingDays(expiresAt) {
