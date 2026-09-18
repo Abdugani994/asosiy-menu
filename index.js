@@ -14,13 +14,62 @@ const bot = new Telegraf(BOT_TOKEN);
 const DB_FILE = path.join(__dirname, 'users.json');
 
 // Bazadan o'qish va saqlash
+// Bazadan o'qish va xatosiz saqlash
 function getUsers() {
-  if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, JSON.stringify([]));
   try {
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+    if (!fs.existsSync(DB_FILE)) {
+      fs.writeFileSync(DB_FILE, JSON.stringify([], null, 2), 'utf8');
+      return [];
+    }
+    const data = fs.readFileSync(DB_FILE, 'utf8');
+    return data ? JSON.parse(data) : [];
   } catch (err) {
+    console.error("Fayl o'qishda xatolik:", err);
     return [];
   }
+}
+
+function saveUsers(users) {
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(users, null, 2), 'utf8');
+  } catch (err) {
+    console.error("Faylga yozishda xatolik:", err);
+  }
+}
+
+function getUser(id) {
+  const users = getUsers();
+  return users.find(u => Number(u.id) === Number(id));
+}
+
+function updateUser(userObj) {
+  if (!userObj || !userObj.id) return;
+
+  const users = getUsers();
+  const idx = users.findIndex(u => Number(u.id) === Number(userObj.id));
+
+  if (idx !== -1) {
+    // Mavjud foydalanuvchi ma'lumotlarini yangilash
+    users[idx] = {
+      ...users[idx],
+      first_name: userObj.first_name || users[idx].first_name,
+      last_name: userObj.last_name || users[idx].last_name,
+      username: userObj.username ? `@${userObj.username}` : users[idx].username
+    };
+  } else {
+    // Yangi foydalanuvchini ro'yxatga qo'shish
+    users.push({
+      id: Number(userObj.id),
+      first_name: userObj.first_name || '',
+      last_name: userObj.last_name || '',
+      username: userObj.username ? `@${userObj.username}` : 'Mavjud emas',
+      lang: 'uz',
+      is_premium: false,
+      subscriptions: [],
+      joined_at: new Date().toISOString()
+    });
+  }
+  saveUsers(users);
 }
 
 function saveUsers(users) {
