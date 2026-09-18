@@ -8,7 +8,6 @@ const { BOOKS, TRANSLATIONS } = require('./books');
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const WEB_APP_URL = process.env.WEB_APP_URL || 'https://t.me/your_bot/app';
-const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'Server_9401').replace('@', '');
 const ADMIN_ID = Number(process.env.ADMIN_ID) || 651936747;
 
 const bot = new Telegraf(BOT_TOKEN);
@@ -29,8 +28,7 @@ function saveUsers(users) {
 }
 
 function getUser(id) {
-  const users = getUsers();
-  return users.find(u => u.id === id);
+  return getUsers().find(u => u.id === id);
 }
 
 function updateUser(userObj) {
@@ -46,21 +44,23 @@ function updateUser(userObj) {
       username: userObj.username ? `@${userObj.username}` : 'Mavjud emas',
       lang: 'uz',
       is_premium: false,
-      subscriptions: [], // [{ book_id: 'eew_1', expires_at: '2026-10-18' }]
+      subscriptions: [],
       joined_at: new Date().toISOString()
     });
   }
   saveUsers(users);
 }
 
+// Holatlarni saqlash
+const userStates = {};
 const adminStates = {};
 
-// Express server (Render keep-alive)
+// Express server
 const app = express();
 app.get('/', (req, res) => res.send('Bot ishlamoqda!'));
 app.listen(process.env.PORT || 10000);
 
-// Klaviatura yasash funksiyasi
+// Klaviatura yasash
 function getMainKeyboard(ctx) {
   const u = getUser(ctx.from.id) || { lang: 'uz' };
   const lang = u.lang || 'uz';
@@ -119,19 +119,18 @@ bot.hears([TRANSLATIONS.uz.btn_help, TRANSLATIONS.en.btn_help, TRANSLATIONS.ru.b
   ctx.reply(t.help_text, { parse_mode: 'Markdown' });
 });
 
-bot.hears([TRANSLATIONS.uz.btn_contact, TRANSLATIONS.en.btn_contact, TRANSLATIONS.ru.btn_contact], (ctx) => {
-  const u = getUser(ctx.from.id);
-  const t = TRANSLATIONS[u.lang || 'uz'];
-  ctx.reply(t.contact_text, {
-    parse_mode: 'Markdown',
-    ...Markup.inlineKeyboard([[Markup.button.url("💬 Admin bilan bog'lanish", `https://t.me/${ADMIN_USERNAME}`)]])
-  });
-});
-
 bot.hears([TRANSLATIONS.uz.btn_more, TRANSLATIONS.en.btn_more, TRANSLATIONS.ru.btn_more], (ctx) => {
   const u = getUser(ctx.from.id);
   const t = TRANSLATIONS[u.lang || 'uz'];
   ctx.reply(t.more_text, { parse_mode: 'Markdown' });
+});
+
+// 📞 KONTAKT: Adminga xabar yuborish rejimini yoqish
+bot.hears([TRANSLATIONS.uz.btn_contact, TRANSLATIONS.en.btn_contact, TRANSLATIONS.ru.btn_contact], (ctx) => {
+  const u = getUser(ctx.from.id);
+  const t = TRANSLATIONS[u.lang || 'uz'];
+  userStates[ctx.from.id] = { action: 'awaiting_feedback' };
+  ctx.reply(t.contact_text, { parse_mode: 'Markdown' });
 });
 
 // --- ADMIN PANEL ---
@@ -149,7 +148,6 @@ bot.hears('⚙️ Admin Panel', (ctx) => {
   });
 });
 
-// Admin: Obunachilar & Premium
 bot.action('admin_users', (ctx) => {
   if (ctx.from.id !== ADMIN_ID) return;
   ctx.answerCbQuery();
@@ -172,7 +170,6 @@ bot.action('admin_premiums', (ctx) => {
   ctx.reply(msg, { parse_mode: 'Markdown' });
 });
 
-// Admin: Premium Boshqaruvi (ID kiritish)
 bot.action('admin_manage_prem', (ctx) => {
   if (ctx.from.id !== ADMIN_ID) return;
   ctx.answerCbQuery();
@@ -180,7 +177,6 @@ bot.action('admin_manage_prem', (ctx) => {
   ctx.reply("✏️ Boshqarmoqchi bo'lgan foydalanuvchining **Telegram ID** raqamini kiriting:");
 });
 
-// Admin: Broadcast Menyusi
 bot.action('admin_broadcast_menu', (ctx) => {
   if (ctx.from.id !== ADMIN_ID) return;
   ctx.answerCbQuery();
@@ -200,7 +196,21 @@ bot.action('send_to_one', (ctx) => {
   ctx.reply("👤 Qaysi **ID** egasiga xabar yubormoqchisiz? ID raqamni kiriting:");
 });
 
-// Admin Dynamic Actions (Kitoblar ro'yxati va Premium qilish)
+// Admin Reply va Ignore tugmalari
+bot.action(/reply_to_(\d+)/, (ctx) => {
+  if (ctx.from.id !== ADMIN_ID) return;
+  const targetId = Number(ctx.match[1]);
+  adminStates[ADMIN_ID] = { action: 'awaiting_reply_msg', targetId };
+  ctx.answerCbQuery();
+  ctx.reply(`✍️ ID: \`${targetId}\` bo'lgan foydalanuvchiga javob xabaringizni yozing:`, { parse_mode: 'Markdown' });
+});
+
+bot.action(/ignore_msg_(\d+)/, (ctx) => {
+  if (ctx.from.id !== ADMIN_ID) return;
+  ctx.answerCbQuery("Xabar e'tiborsiz qoldirildi.");
+  ctx.editMessageText(ctx.callbackQuery.message.text + "\n\n❌ *E'tiborsiz qoldirildi*", { parse_mode: 'Markdown' });
+});
+
 bot.action(/toggle_prem_(\d+)/, (ctx) => {
   const targetId = Number(ctx.match[1]);
   const u = getUser(targetId);
@@ -210,7 +220,7 @@ bot.action(/toggle_prem_(\d+)/, (ctx) => {
   updateUser(u);
 
   ctx.answerCbQuery();
-  ctx.reply(`Status o'zgartirildi: ${u.is_premium ? '⭐ Premium' : 'Oddiy'}\n\nEndi ushbu foydalanuvchi uchun **Kitob obunasini** tanlang:`,
+  ctx.reply(`Status o'zgartirildi: ${u.is_premium ? '⭐ Premium' : 'Oddiy'}\n\nEndi kitob obunasini tanlang:`,
     Markup.inlineKeyboard(
       BOOKS.map(b => [Markup.button.callback(b.title, `toggle_book_${targetId}_${b.id}`)])
     )
@@ -220,20 +230,58 @@ bot.action(/toggle_prem_(\d+)/, (ctx) => {
 bot.action(/toggle_book_(\d+)_(.+)/, (ctx) => {
   const targetId = Number(ctx.match[1]);
   const bookId = ctx.match[2];
-  const u = getUser(targetId);
-
   ctx.answerCbQuery();
-  ctx.reply(`✅ ID: \`${targetId}\` foydalanuvchisiga **${bookId}** kitobi obunasi muvaffaqiyatli biriktirildi!`, { parse_mode: 'Markdown' });
+  ctx.reply(`✅ ID: \`${targetId}\` foydalanuvchisiga **${bookId}** kitobi obunasi biriktirildi!`, { parse_mode: 'Markdown' });
 });
 
-// Message Listener (Admin buyruqlarini ushlash)
+// MESSAGE HANDLER (Xabarlarni ushlash)
 bot.on('message', async (ctx, next) => {
   updateUser(ctx.from);
-  const state = adminStates[ctx.from.id];
-  if (!state || ctx.from.id !== ADMIN_ID) return next();
 
-  // ID kiritilganda Premium Boshqaruvi oynasi chiqariladi
-  if (state.action === 'awaiting_target_id') {
+  // 1. Foydalanuvchi Adminga murojaat yuborganda
+  const uState = userStates[ctx.from.id];
+  if (uState && uState.action === 'awaiting_feedback' && ctx.from.id !== ADMIN_ID) {
+    delete userStates[ctx.from.id];
+
+    // Xabarni adminga yetkazish
+    await ctx.telegram.sendMessage(
+      ADMIN_ID,
+      `📩 **Yangi Murojaat!**\n\n` +
+      `👤 **Kimdan:** ${ctx.from.first_name} ${ctx.from.last_name || ''}\n` +
+      `🆔 **ID:** \`${ctx.from.id}\`\n` +
+      `🌐 **Username:** @${ctx.from.username || 'mavjud_emas'}\n\n` +
+      `💬 **Xabar:**\n${ctx.message.text || '[Media xabar]'}`,
+      {
+        parse_mode: 'Markdown',
+        ...Markup.inlineKeyboard([
+          [Markup.button.callback('💬 Javob berish', `reply_to_${ctx.from.id}`)],
+          [Markup.button.callback('❌ E\'tiborsiz qoldirish', `ignore_msg_${ctx.from.id}`)]
+        ])
+      }
+    );
+
+    return ctx.reply("✅ Xabaringiz adminga yetkazildi. Tez orada javob olasiz!");
+  }
+
+  // 2. Admin amallari
+  const aState = adminStates[ctx.from.id];
+  if (!aState || ctx.from.id !== ADMIN_ID) return next();
+
+  // Admin foydalanuvchiga javob yozganda
+  if (aState.action === 'awaiting_reply_msg') {
+    const targetId = aState.targetId;
+    delete adminStates[ctx.from.id];
+
+    try {
+      await ctx.telegram.sendMessage(targetId, `💬 **Admin javobi:**\n\n${ctx.message.text}`);
+      return ctx.reply(`✅ Javob ID: \`${targetId}\` egasiga yuborildi!`, { parse_mode: 'Markdown' });
+    } catch (e) {
+      return ctx.reply("❌ Javob yuborishda xatolik. Foydalanuvchi botni bloklagan bo'lishi mumkin.");
+    }
+  }
+
+  // Admin ID kiritganda Premium Boshqaruvi
+  if (aState.action === 'awaiting_target_id') {
     const targetId = Number(ctx.message.text);
     delete adminStates[ctx.from.id];
     const targetUser = getUser(targetId);
@@ -252,25 +300,25 @@ bot.on('message', async (ctx, next) => {
   }
 
   // Barchaga xabar
-  if (state.action === 'awaiting_broadcast') {
+  if (aState.action === 'awaiting_broadcast') {
     delete adminStates[ctx.from.id];
     const users = getUsers();
     let c = 0;
     for (const u of users) {
       try { await ctx.copyMessage(u.id); c++; } catch (e) {}
     }
-    return ctx.reply(`✅ Xabar ${c} ta foydalanuvchiga muvaffaqiyatli yetkazildi!`);
+    return ctx.reply(`✅ Xabar ${c} ta foydalanuvchiga yetkazildi!`);
   }
 
-  // Alohida foydalanuvchi ID va xabari
-  if (state.action === 'awaiting_single_id') {
+  // Alohida xabar uchun ID
+  if (aState.action === 'awaiting_single_id') {
     const targetId = Number(ctx.message.text);
     adminStates[ctx.from.id] = { action: 'awaiting_single_msg', targetId };
     return ctx.reply(`Siz ID: \`${targetId}\` ni kiritdingiz. Endi xabaringizni yuboring:`);
   }
 
-  if (state.action === 'awaiting_single_msg') {
-    const targetId = state.targetId;
+  if (aState.action === 'awaiting_single_msg') {
+    const targetId = aState.targetId;
     delete adminStates[ctx.from.id];
     try {
       await ctx.copyMessage(targetId);
