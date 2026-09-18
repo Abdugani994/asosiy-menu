@@ -1,4 +1,3 @@
-// Kelajakda kitob qo'shsangiz faqat ushbu massivga ob'ekt qo'shasiz
 const BOOKS = [
   { id: 'eew_1', title: '4000 Essential English Words 1' },
   { id: 'eew_2', title: '4000 Essential English Words 2' },
@@ -8,7 +7,6 @@ const BOOKS = [
   { id: 'eew_6', title: '4000 Essential English Words 6' }
 ];
 
-// 3 ta tildagi menyu matnlari va tugmalari
 const TRANSLATIONS = {
   uz: {
     welcome: "Xush kelibsiz! Kerakli bo'limni tanlang:",
@@ -20,7 +18,7 @@ const TRANSLATIONS = {
     btn_lang: "🌐 Tilni o'zgartirish",
     sub_text: "📊 **Sizning obunangiz:**\n\nActive: Essential English Words 1\nQolgan muddat: 30 kun",
     help_text: "📖 **Qo'llanma va video darsliklar:**\n\n1. Botdan foydalanish video yo'riqnomasi\n2. Obuna bo'lish video yo'riqnomasi",
-    contact_text: "📞 **Adminga xabar yuborish:**\nPastdagi tugmani bosib adminga biriktirilgan bot yoki havola orqali yozishingiz mumkin:",
+    contact_text: "📞 **Adminga xabar yuborish:**\n\nSavolingiz yoki murojaatingizni yozib yuboring. Admin tez orada javob beradi.",
     more_text: "🌐 **Bizning boshqa loyihalarimiz va kanallarimiz:**\n\n• Telegram Kanal: @myvocabularies\n• YouTube: @myvocabularies"
   },
   en: {
@@ -33,7 +31,7 @@ const TRANSLATIONS = {
     btn_lang: "🌐 Change Language",
     sub_text: "📊 **Your Subscriptions:**\n\nActive: Essential English Words 1\nDays remaining: 30 days",
     help_text: "📖 **Guides & Video Tutorials:**\n\n1. How to use the bot\n2. How to subscribe",
-    contact_text: "📞 **Contact Support:**\nClick the button below to reach the admin:",
+    contact_text: "📞 **Contact Support:**\n\nPlease send your message or question below. Admin will reply soon.",
     more_text: "🌐 **Our other projects and channels:**\n\n• Telegram Channel: @myvocabularies\n• YouTube: @myvocabularies"
   },
   ru: {
@@ -46,7 +44,7 @@ const TRANSLATIONS = {
     btn_lang: "🌐 Изменить язык",
     sub_text: "📊 **Ваши подписки:**\n\nАктивно: Essential English Words 1\nОсталось дней: 30 дней",
     help_text: "📖 **Инструкции и видеоуроки:**\n\n1. Как пользоваться ботом\n2. Как оформить подписку",
-    contact_text: "📞 **Связаться с администратором:**\nНажмите кнопку ниже для связи:",
+    contact_text: "📞 **Связь с администратором:**\n\nНапишите ваше сообщение или вопрос. Админ ответит в ближайшее время.",
     more_text: "🌐 **Наши другие проекты и каналы:**\n\n• Telegram Канал: @myvocabularies\n• YouTube: @myvocabularies"
   }
 };
