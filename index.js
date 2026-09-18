@@ -319,6 +319,21 @@ bot.action(/add_sub_(\d+)_(book_\d+)/, (ctx) => {
   }
 });
 
-bot.launch().then(() => console.log("Bot ishga tushdi!"));
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+// Botni xavfsiz ishga tushirish
+bot.launch().then(() => {
+  console.log("Bot muvaffaqiyatli ishga tushdi!");
+}).catch(err => {
+  console.error("Botni ishga tushirishda xatolik:", err);
+});
+
+// Qayta ishga tushishda (SIGINT/SIGTERM) xatolik bermaslik uchun
+const stopBot = (reason) => {
+  try {
+    bot.stop(reason);
+  } catch (e) {
+    // Bot hali ishga tushmagan bo'lsa xatolikni e'tiborsiz qoldiramiz
+  }
+};
+
+process.once('SIGINT', () => stopBot('SIGINT'));
+process.once('SIGTERM', () => stopBot('SIGTERM'));
