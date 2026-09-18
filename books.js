@@ -16,7 +16,6 @@ const TRANSLATIONS = {
     btn_contact: "📞 Kontakt",
     btn_more: "🌐 More (Loyiha haqida)",
     btn_lang: "🌐 Tilni o'zgartirish",
-    sub_text: "📊 **Sizning obunangiz:**\n\nActive: Essential English Words 1\nQolgan muddat: 30 kun",
     help_text: "📖 **Qo'llanma va video darsliklar:**\n\n1. Botdan foydalanish video yo'riqnomasi\n2. Obuna bo'lish video yo'riqnomasi",
     contact_text: "📞 **Adminga xabar yuborish:**\n\nSavolingiz yoki murojaatingizni yozib yuboring. Admin tez orada javob beradi.",
     more_text: "🌐 **Bizning boshqa loyihalarimiz va kanallarimiz:**\n\n• Telegram Kanal: @myvocabularies\n• YouTube: @myvocabularies"
@@ -29,7 +28,6 @@ const TRANSLATIONS = {
     btn_contact: "📞 Contact",
     btn_more: "🌐 More Info",
     btn_lang: "🌐 Change Language",
-    sub_text: "📊 **Your Subscriptions:**\n\nActive: Essential English Words 1\nDays remaining: 30 days",
     help_text: "📖 **Guides & Video Tutorials:**\n\n1. How to use the bot\n2. How to subscribe",
     contact_text: "📞 **Contact Support:**\n\nPlease send your message or question below. Admin will reply soon.",
     more_text: "🌐 **Our other projects and channels:**\n\n• Telegram Channel: @myvocabularies\n• YouTube: @myvocabularies"
@@ -42,7 +40,6 @@ const TRANSLATIONS = {
     btn_contact: "📞 Контакт",
     btn_more: "🌐 Дополнительно",
     btn_lang: "🌐 Изменить язык",
-    sub_text: "📊 **Ваши подписки:**\n\nАктивно: Essential English Words 1\nОсталось дней: 30 дней",
     help_text: "📖 **Инструкции и видеоуроки:**\n\n1. Как пользоваться ботом\n2. Как оформить подписку",
     contact_text: "📞 **Связь с администратором:**\n\nНапишите ваше сообщение или вопрос. Админ ответит в ближайшее время.",
     more_text: "🌐 **Наши другие проекты и каналы:**\n\n• Telegram Канал: @myvocabularies\n• YouTube: @myvocabularies"
